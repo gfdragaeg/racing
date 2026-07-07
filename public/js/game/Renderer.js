@@ -278,11 +278,19 @@ export class Renderer {
       if (!seen.has(id)) this.removeCar(id); // disconnected mid-race
     }
 
-    /* ---- projectiles ---- */
+    /* ---- projectiles (with trails) ---- */
+    const now = performance.now();
     this.syncPool(this.projMeshes, view.proj, (pr) => makeProjectileMesh(pr.ty),
       (mesh, pr) => {
-        mesh.position.set(pr.x, Math.max(pr.y, 0.4), pr.z);
+        const py = Math.max(pr.y, 0.4);
+        mesh.position.set(pr.x, py, pr.z);
         mesh.rotation.y = pr.h;
+        // Emit a fading trail puff a few times a second per projectile.
+        const trail = TRAIL_STYLE[pr.ty];
+        if (trail && now - (mesh.userData.lastTrail || 0) > 24) {
+          mesh.userData.lastTrail = now;
+          this.effects.trailPuff(pr.x, py, pr.z, trail.color, trail.size, trail.dur);
+        }
       });
 
     /* ---- ground items (oil, fire, mines) ---- */
@@ -449,6 +457,14 @@ const ZERO = new THREE.Vector3();
 /* ==================================================================== *
  *  Mesh factories
  * ==================================================================== */
+
+/** Per-projectile trail appearance (colour / size / lifetime). */
+const TRAIL_STYLE = {
+  rocket:   { color: 0xff8a3a, size: 0.7, dur: 0.45 },
+  slimeball:{ color: 0x8dff2a, size: 0.6, dur: 0.5 },
+  bouncer:  { color: 0xc86bff, size: 0.6, dur: 0.4 },
+  cluster:  { color: 0x666666, size: 0.5, dur: 0.35 },
+};
 
 function makeProjectileMesh(ty) {
   if (ty === 'rocket') {

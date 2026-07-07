@@ -104,6 +104,7 @@ export function buildTrackScene(scene, track) {
   /* ------------------------ theme centrepieces ---------------------- */
   if (track.theme === 'downtown') group.add(buildStreetLights(track));
   if (track.theme === 'volcano') group.add(buildVolcanoCone());
+  if (track.theme === 'toxic') group.add(buildToxicLandmarks(track));
 
   /* --------------------- horizon & sky dressing --------------------- */
   group.add(buildHorizon(theme));
@@ -417,6 +418,80 @@ function buildVolcanoCone() {
 }
 
 /**
+ * Toxic Waste landmarks: a handful of big glowing radioactive vats
+ * dotted around the infield, each with hazard-striped tops, connecting
+ * pipes and a green glow light, so the map reads as a chemical plant
+ * rather than a recoloured volcano.
+ */
+function buildToxicLandmarks(track) {
+  const g = new THREE.Group();
+  const rnd = mulberry32(424242);
+
+  // Place vats inside the loop, comfortably clear of the road.
+  let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
+  for (const p of track.pts) {
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+    minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z);
+  }
+  const clearOfRoad = (x, z) => {
+    if (inOpenZone(track, x, z)) return false;
+    let best = 1e9;
+    for (let i = 0; i < track.pts.length; i += 3) {
+      const dx = x - track.pts[i].x, dz = z - track.pts[i].z;
+      best = Math.min(best, dx * dx + dz * dz);
+    }
+    return Math.sqrt(best) > track.halfWidth + 16;
+  };
+
+  const vatGlow = new THREE.MeshBasicMaterial({ color: 0x8dff2a });
+  const metal = new THREE.MeshLambertMaterial({ color: 0x455036 });
+  const hazard = new THREE.MeshBasicMaterial({ color: 0xffd400 });
+  const pipeMat = new THREE.MeshLambertMaterial({ color: 0x5a6a45 });
+
+  const vats = [];
+  let guard = 0;
+  while (vats.length < 5 && guard++ < 400) {
+    const x = minX - 20 + rnd() * (maxX - minX + 40);
+    const z = minZ - 20 + rnd() * (maxZ - minZ + 40);
+    if (!clearOfRoad(x, z)) continue;
+    if (vats.some((v) => Math.hypot(v.x - x, v.z - z) < 40)) continue;
+
+    const r = 7 + rnd() * 4, h = 10 + rnd() * 6;
+    // Outer tank wall.
+    const wall = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), metal);
+    wall.position.set(x, h / 2, z);
+    g.add(wall);
+    // Glowing sludge surface on top.
+    const surf = new THREE.Mesh(new THREE.CircleGeometry(r - 0.6, 16), vatGlow);
+    surf.rotation.x = -Math.PI / 2;
+    surf.position.set(x, h + 0.05, z);
+    g.add(surf);
+    // Hazard-striped rim.
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(r, 0.45, 8, 20), hazard);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.set(x, h, z);
+    g.add(rim);
+    // Green glow light above the vat.
+    const light = new THREE.PointLight(0x9dff45, 60, 90);
+    light.position.set(x, h + 6, z);
+    g.add(light);
+    vats.push({ x, z, h });
+  }
+
+  // Rusty pipes connecting neighbouring vats along the ground.
+  for (let i = 0; i < vats.length - 1; i++) {
+    const a = vats[i], b = vats[i + 1];
+    const len = Math.hypot(b.x - a.x, b.z - a.z);
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, len, 8), pipeMat);
+    pipe.position.set((a.x + b.x) / 2, 1.4, (a.z + b.z) / 2);
+    pipe.rotation.z = Math.PI / 2;
+    pipe.rotation.y = Math.atan2(b.x - a.x, b.z - a.z) + Math.PI / 2;
+    g.add(pipe);
+  }
+  return g;
+}
+
+/**
  * Distant horizon silhouettes rendered with fog disabled, so the flat
  * fog-coloured edge of the world becomes a skyline (Downtown), a
  * mountain ridge (Volcano) or white peaks (Frozen).
@@ -425,7 +500,7 @@ function buildHorizon(theme) {
   const g = new THREE.Group();
   const mat = new THREE.MeshBasicMaterial({ color: theme.horizon, fog: false });
   const rnd = mulberry32(24680);
-  const N = theme.decor === 'city' ? 26 : 16;
+  const N = (theme.decor === 'city' || theme.decor === 'barrels') ? 26 : 16;
   for (let i = 0; i < N; i++) {
     const a = (i / N) * Math.PI * 2 + rnd() * 0.25;
     const dist = 430 + rnd() * 70;
@@ -433,6 +508,15 @@ function buildHorizon(theme) {
     if (theme.decor === 'city') {
       const w = 26 + rnd() * 40, h = 55 + rnd() * 100;
       mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, w), mat);
+      mesh.position.set(Math.sin(a) * dist, h / 2 - 2, Math.cos(a) * dist);
+    } else if (theme.decor === 'barrels') {
+      // Chemical-plant skyline: tall thin smokestacks + squat storage tanks.
+      const stack = rnd() > 0.45;
+      const w = stack ? 8 + rnd() * 12 : 44 + rnd() * 46;
+      const h = stack ? 95 + rnd() * 110 : 40 + rnd() * 55;
+      const geo = stack ? new THREE.BoxGeometry(w, h, w)
+        : new THREE.CylinderGeometry(w / 2, w / 2, h, 10);
+      mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(Math.sin(a) * dist, h / 2 - 2, Math.cos(a) * dist);
     } else {
       const r = 55 + rnd() * 50, h = 75 + rnd() * 95;
@@ -679,7 +763,9 @@ function buildDecor(track, theme) {
 
   const geo = theme.decor === 'city'
     ? new THREE.BoxGeometry(1, 1, 1)
-    : new THREE.ConeGeometry(0.6, 1, 6);
+    : theme.decor === 'barrels'
+      ? new THREE.CylinderGeometry(0.5, 0.5, 1, 12) // storage tanks / silos
+      : new THREE.ConeGeometry(0.6, 1, 6);
   // City buildings get a lit-window texture (map tints per instance,
   // the emissive map makes windows glow through the night fog).
   let mat;
@@ -707,6 +793,13 @@ function buildDecor(track, theme) {
     } else if (theme.decor === 'rocks') {
       sx = sz = 4 + sp.r * 9; sy = 4 + sp.r * 12;
       col = color.setHSL(0.05, 0.35, 0.12 + sp.r * 0.1);
+    } else if (theme.decor === 'barrels') {
+      // Chemical storage tanks: mostly dull metal, some glowing toxic.
+      sx = sz = 6 + sp.r * 8; sy = 12 + sp.r * 26;
+      const glowTank = ((sp.r * 137) % 1) > 0.72;
+      col = glowTank
+        ? color.setHSL(0.26, 0.85, 0.5)              // radioactive vat
+        : color.setHSL(0.30, 0.18, 0.15 + sp.r * 0.14); // grey-green metal
     } else { // pines
       sx = sz = 3 + sp.r * 4; sy = 6 + sp.r * 8;
       col = color.setHSL(0.38, 0.35, 0.22 + sp.r * 0.15);

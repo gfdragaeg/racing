@@ -379,7 +379,7 @@ export class GameClient {
         audio.play('rail', this.distTo(ev.x1, ev.z1));
         break;
       case 'tracer':
-        fx?.beam(ev.x1, ev.z1, ev.x2, ev.z2, 0xffe08a, 0.08, 0.12);
+        fx?.tracer(ev.x1, ev.z1, ev.x2, ev.z2);
         audio.play('gun', this.distTo(ev.x1, ev.z1));
         break;
       case 'chain':
@@ -387,15 +387,16 @@ export class GameClient {
         audio.play('chain', this.distTo(ev.pts[0][0], ev.pts[0][1]));
         break;
       case 'empBlast':
-        fx?.ring(ev.x, ev.z, ev.r, 0x38e0ff);
+        fx?.emp(ev.x, ev.z, ev.r);
         audio.play('emp', this.distTo(ev.x, ev.z));
         break;
       case 'shockwave':
-        fx?.ring(ev.x, ev.z, ev.r, 0xff4d88);
+        fx?.shock(ev.x, ev.z, ev.r);
         audio.play('shock', this.distTo(ev.x, ev.z));
         break;
       case 'mineBoom':
         fx?.ring(ev.x, ev.z, 3, 0x9adfff);
+        fx?.burst(ev.x, 0.8, ev.z, { count: 12, color: 0x9adfff, speed: 9, size: 0.5, dur: 0.4 });
         audio.play('freeze', this.distTo(ev.x, ev.z));
         break;
       case 'pickup':
@@ -464,7 +465,7 @@ export class GameClient {
         }
         break;
       case 'slimeSplat':
-        fx?.ring(ev.x, ev.z, 3, 0x8dff2a);
+        fx?.slimeSplat(ev.x, ev.z);
         audio.play('slime', this.distTo(ev.x, ev.z));
         break;
       case 'fell':
