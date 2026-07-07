@@ -57,6 +57,8 @@ export class GameClient {
     this.pending = [];            // inputs not yet acked by the server
     this.seq = 0;
     this.sendAcc = 0;
+    this.sendFire = false;        // edge inputs latched until actually sent
+    this.sendJump = false;
 
     // --- snapshot buffer for interpolation ---
     this.snaps = [];
@@ -184,11 +186,26 @@ export class GameClient {
       stepVehicle(this.predicted, input, dt, this.localMods(this.predicted));
       collideWithTrack(this.track, this.predicted, dt);
 
-      // Inputs go out at a fixed 30 Hz regardless of render FPS.
+      // Edge inputs (fire/jump) are latched here so they survive until
+      // the next network send. sample() runs every render frame but we
+      // only emit at 30 Hz, so without this a tap that lands between
+      // sends would be consumed and NEVER reach the server (fast phones
+      // dropped ~half of all fire taps -> "it takes a while to fire").
+      if (input.jump) this.sendJump = true;
+      if (input.fire) this.sendFire = true;
+
+      // Continuous input goes out at a fixed 30 Hz, but a pending edge
+      // flushes IMMEDIATELY so abilities/hops fire on command.
       this.sendAcc += dt;
-      if (this.sendAcc >= SEND_INTERVAL) {
+      if (this.sendAcc >= SEND_INTERVAL || this.sendFire || this.sendJump) {
         this.sendAcc = 0;
-        this.net.emit('race:input', { seq: this.seq, ...input });
+        this.net.emit('race:input', {
+          seq: this.seq,
+          th: input.th, st: input.st, drift: input.drift, boost: input.boost,
+          jump: this.sendJump, fire: this.sendFire,
+        });
+        this.sendFire = false;
+        this.sendJump = false;
       }
     }
 
