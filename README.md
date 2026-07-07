@@ -49,13 +49,20 @@ steps aside on the first key press.)
 - **Game modes** — Combat Race (abilities on) and Classic Race
   (pure racing, no pickups). Last Driver Standing & Time Trial are
   planned (see roadmap).
-- **Three tracks** — Downtown Circuit (beginner: wide roads, tunnels,
+- **Four tracks** — Downtown Circuit (beginner: wide roads, tunnels,
   alley shortcuts, ramps), Volcano Run (hard: narrow, lava, falling
-  rocks, collapsing bridge, risky lava shortcuts), Frozen Summit
-  (low-grip ice, frozen-lake shortcut, moving glaciers, snowstorm).
-- **11 abilities** — Rocket (homing), EMP, Oil Slick, Fire Trail,
+  rocks, collapsing bridge, and **bottomless pits — fall in and you
+  restart the current lap**), Frozen Summit (low-grip ice, frozen-lake
+  shortcut, moving glaciers, snowstorm), and Toxic Waste (radioactive
+  sludge, toxic-waste pools and slippery ooze).
+- **15 abilities** — Rocket (homing), EMP, Oil Slick, Fire Trail,
   Freeze Mine, Shockwave, Railgun, Cluster Bomb, Chain Lightning,
-  Shield, Nitro — all simulated on the server.
+  Shield, Nitro, Minigun, Bouncer, GPS Jammer (locks onto 1st place),
+  and Slime Bomb (splatters the target's screen for 5 s, then slows
+  them for 5 s) — all simulated on the server.
+- **Car customization** — pick your car colour in the lobby from eight
+  colours (red, baby blue, green, yellow, purple, pink, golden, teal);
+  click a swatch or click your own colour dot to cycle.
 - **Health & respawns** — explode at 0 HP, respawn at your last
   checkpoint after 3 s with brief spawn protection. Nobody is ever
   eliminated.

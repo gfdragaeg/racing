@@ -19,7 +19,7 @@ export class Hud {
       ability: $('hud-ability'), speed: $('hud-speed'),
       board: $('hud-board'), center: $('hud-center'),
       status: $('hud-status'), hint: $('hud-hint'),
-      glitch: $('hud-glitch'),
+      glitch: $('hud-glitch'), slime: $('hud-slime'),
     };
     this.centerTimer = null;
     this.glitchTimer = null;
@@ -31,9 +31,17 @@ export class Hud {
     this.el.status.textContent = '';
     this.el.hint.classList.remove('faded');
     this.el.glitch.classList.remove('on');
+    this.el.slime.classList.remove('on');
     this.cache = {};
     // Fade the controls hint after a while.
     setTimeout(() => this.el.hint.classList.add('faded'), 12000);
+  }
+
+  /** Toggle the full-screen slime splatter (Slime Bomb COVER phase). */
+  setSlime(on) {
+    if (this._slimeOn === on) return; // avoid thrashing the class list
+    this._slimeOn = on;
+    this.el.slime.classList.toggle('on', on);
   }
 
   /**

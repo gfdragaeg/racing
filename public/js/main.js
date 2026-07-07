@@ -12,6 +12,7 @@ import { GameClient } from './game/GameClient.js';
 import { audio } from './audio/AudioManager.js';
 import { VoiceChat } from './voice/VoiceChat.js';
 import { TRACK_INFO } from '/shared/tracks.js';
+import { CAR_COLORS } from '/shared/constants.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -109,14 +110,22 @@ function renderLobby() {
 
   $('lobby-code').textContent = room.code;
 
-  // Player list with ready states.
+  // Player list with ready states. Your own colour dot is clickable and
+  // cycles to the next car colour (the swatch row below picks a specific
+  // one).
   $('lobby-players').innerHTML = room.players.map((p) => `
     <li>
-      <span class="dot" style="background:${p.color}"></span>
+      <span class="dot ${p.id === net.id ? 'clickable' : ''}" data-me="${p.id === net.id}"
+        style="background:${p.color}" ${p.id === net.id ? 'title="Click to change your car colour"' : ''}></span>
       <span class="who">${escapeHtml(p.name)}${p.id === net.id ? ' (you)' : ''}
         ${p.isHost ? '<span class="tag">★ HOST</span>' : ''}</span>
       <span class="rdy ${p.ready || p.isHost ? 'on' : ''}">${p.isHost ? 'HOST' : p.ready ? 'READY' : 'waiting'}</span>
     </li>`).join('');
+  // Clicking your own dot cycles colour.
+  const myDot = $('lobby-players').querySelector('.dot[data-me="true"]');
+  if (myDot) myDot.onclick = cycleMyColor;
+
+  renderColorSwatches(me?.color);
 
   // Settings: host edits, everyone else views.
   for (const key of SETTING_IDS) {
@@ -140,6 +149,28 @@ function renderLobby() {
   $('lobby-status').textContent = isHost
     ? (allReady ? 'All set — start when ready!' : 'Waiting for players to ready up…')
     : 'Waiting for the host to start the race…';
+}
+
+/** Render the 8 car-colour swatches, highlighting the current pick. */
+function renderColorSwatches(currentHex) {
+  const wrap = $('color-swatches');
+  if (!wrap) return;
+  wrap.innerHTML = CAR_COLORS.map((c) => `
+    <button class="swatch ${c.hex === currentHex ? 'selected' : ''}"
+      data-hex="${c.hex}" style="background:${c.hex}" title="${c.name}"
+      aria-label="${c.name}"></button>`).join('');
+  wrap.querySelectorAll('.swatch').forEach((btn) => {
+    btn.onclick = () => net.emit('room:color', { color: btn.dataset.hex });
+  });
+}
+
+/** Clicking your own dot advances to the next colour in the palette. */
+function cycleMyColor() {
+  const me = room?.players.find((p) => p.id === net.id);
+  if (!me) return;
+  const idx = CAR_COLORS.findIndex((c) => c.hex === me.color);
+  const next = CAR_COLORS[(idx + 1) % CAR_COLORS.length];
+  net.emit('room:color', { color: next.hex });
 }
 
 $('btn-ready').onclick = () => {

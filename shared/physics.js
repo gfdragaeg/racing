@@ -133,6 +133,7 @@ export function stepVehicle(s, input, dt, mods = {}) {
   s.fxFrozen = Math.max(0, s.fxFrozen - dt);
   s.fxEmp = Math.max(0, s.fxEmp - dt);
   s.fxJam = Math.max(0, (s.fxJam || 0) - dt);
+  s.fxSlime = Math.max(0, (s.fxSlime || 0) - dt);
 }
 
 /** Blank vehicle state (spawned at a track spawn point by the caller). */
@@ -142,7 +143,7 @@ export function makeVehicleState() {
     vx: 0, vz: 0, vy: 0,
     h: 0,
     boostMeter: 0, boostTime: 0,
-    fxSpin: 0, fxFrozen: 0, fxEmp: 0, fxJam: 0,
+    fxSpin: 0, fxFrozen: 0, fxEmp: 0, fxJam: 0, fxSlime: 0,
     trackIdx: null,
     wallHit: false,
   };
@@ -155,6 +156,6 @@ export function copyVehicleState(dst, src) {
   dst.h = src.h;
   dst.boostMeter = src.boostMeter; dst.boostTime = src.boostTime;
   dst.fxSpin = src.fxSpin; dst.fxFrozen = src.fxFrozen; dst.fxEmp = src.fxEmp;
-  dst.fxJam = src.fxJam;
+  dst.fxJam = src.fxJam; dst.fxSlime = src.fxSlime;
   return dst;
 }

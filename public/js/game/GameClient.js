@@ -19,7 +19,10 @@
 
 import { buildTrack, collideWithTrack, terrainModsAt } from '/shared/tracks.js';
 import { stepVehicle, copyVehicleState } from '/shared/physics.js';
-import { PHYS, JAM_SPEED_MUL, clamp, lerp, lerpAngle } from '/shared/constants.js';
+import {
+  PHYS, JAM_SPEED_MUL, SLIME_SLOW_SECONDS, SLIME_SPEED_MUL,
+  clamp, lerp, lerpAngle,
+} from '/shared/constants.js';
 import { Renderer } from './Renderer.js';
 import { Input } from './Input.js';
 import { Hud } from '../ui/hud.js';
@@ -126,6 +129,7 @@ export class GameClient {
       h: me.h,
       boostMeter: me.bm, boostTime: me.bt,
       fxSpin: me.sp, fxFrozen: me.fr, fxEmp: me.em, fxJam: me.jm ?? 0,
+      fxSlime: me.sl ?? 0,
       trackIdx: this.predicted?.trackIdx ?? null,
       wallHit: false,
     };
@@ -153,6 +157,7 @@ export class GameClient {
   localMods(st) {
     const m = terrainModsAt(this.track, st);
     if (st.fxJam > 0) m.maxMul *= JAM_SPEED_MUL;
+    if (st.fxSlime > 0 && st.fxSlime <= SLIME_SLOW_SECONDS) m.maxMul *= SLIME_SPEED_MUL;
     return m;
   }
 
@@ -300,10 +305,15 @@ export class GameClient {
     else if (me.sp > 0) status = '🛢 SPINNING OUT!';
     else if (me.em > 0) status = '⚡ ENGINE DISABLED!';
     else if (me.jm > 0) status = '🛰️ SIGNAL JAMMED — top speed cut!';
+    else if (me.sl > SLIME_SLOW_SECONDS) status = '🟢 SLIMED — wipe it off!';
+    else if (me.sl > 0) status = '🟢 SLIME SLOWDOWN!';
     else if (this.predicted && this.localMods(this.predicted).accelMul < 1) {
       status = '🟤 OFF-ROAD — mud is slow!';
     }
     if (this.paused) status = 'PAUSED — race continues!';
+
+    // Full-screen slime splatter during the COVER phase (hard to see).
+    this.hud.setSlime(!me.dead && me.sl > SLIME_SLOW_SECONDS);
 
     const standings = [...sn.players]
       .sort((x, y2) => x.pos - y2.pos)
@@ -443,6 +453,26 @@ export class GameClient {
         break;
       case 'jamFizzle':
         if (ev.id === meId) this.hud.announce("You're already in 1st! 🛰️", 1600);
+        break;
+      case 'slime':
+        if (ev.id === meId) {
+          audio.play('slime');
+          this.hud.announce('🟢 SLIMED!', 1400);
+        } else if (ev.by === meId) {
+          audio.play('use');
+          this.hud.announce('🟢 SLIME HIT!', 1400);
+        }
+        break;
+      case 'slimeSplat':
+        fx?.ring(ev.x, ev.z, 3, 0x8dff2a);
+        audio.play('slime', this.distTo(ev.x, ev.z));
+        break;
+      case 'fell':
+        if (ev.id === meId) {
+          this.visual = null; // snap camera to the lap-start respawn
+          audio.play('fell');
+          this.hud.announce('🕳️ FELL IN! Restarting lap…', 1800);
+        }
         break;
     }
   }

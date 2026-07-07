@@ -15,7 +15,7 @@
  */
 
 import {
-  MAX_PLAYERS, DEFAULT_SETTINGS, SETTING_OPTIONS, PLAYER_COLORS,
+  MAX_PLAYERS, DEFAULT_SETTINGS, SETTING_OPTIONS, PLAYER_COLORS, CAR_COLOR_HEXES,
 } from '../../shared/constants.js';
 import { Game } from '../game/Game.js';
 
@@ -41,6 +41,7 @@ export class LobbyManager {
     socket.on('room:join', (data) => this.joinRoom(socket, data));
     socket.on('room:leave', () => this.leaveRoom(socket));
     socket.on('room:ready', (data) => this.setReady(socket, data));
+    socket.on('room:color', (data) => this.setColor(socket, data));
     socket.on('room:settings', (data) => this.changeSettings(socket, data));
     socket.on('room:start', () => this.startRace(socket));
     socket.on('room:rematch', () => this.rematch(socket));
@@ -161,6 +162,16 @@ export class LobbyManager {
     const p = room?.players.get(socket.id);
     if (!p || room.state !== 'lobby') return;
     p.ready = !!ready;
+    this.broadcastState(room);
+  }
+
+  /** A player picks their car colour from the validated palette. */
+  setColor(socket, { color } = {}) {
+    const room = this.bySocket.get(socket.id);
+    const p = room?.players.get(socket.id);
+    if (!p || room.state !== 'lobby') return;
+    if (!CAR_COLOR_HEXES.includes(color)) return; // reject anything off-palette
+    p.color = color;
     this.broadcastState(room);
   }
 

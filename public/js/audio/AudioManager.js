@@ -103,6 +103,13 @@ export class AudioManager {
         this.zap(500, 60, 0.55, 0.3);
         this.noiseBurst(0.5, 1200, 0.25);
         break;
+      case 'slime': // wet gloopy splat
+        this.sweep(420, 90, 0.35, 0.4 * atten);
+        this.noiseBurst(0.22, 500, 0.3 * atten);
+        break;
+      case 'fell': // falling whoosh into the pit
+        this.sweep(700, 50, 0.8, 0.4);
+        break;
       case 'chain': this.zap(1400, 300, 0.3, 0.4 * atten); break;
       case 'emp': this.zap(300, 40, 0.5, 0.5 * atten); break;
       case 'shock': this.noiseBurst(0.35, 500, 0.6 * atten); break;

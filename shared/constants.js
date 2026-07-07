@@ -69,6 +69,7 @@ export const ABILITIES = {
   minigun: { name: 'Minigun',         icon: '🔫', damage: 4  }, // per bullet
   bouncer: { name: 'Bouncer',         icon: '🔮', damage: 25 },
   jammer:  { name: 'GPS Jammer',      icon: '🛰️', damage: 0  },
+  slime:   { name: 'Slime Bomb',      icon: '🟢', damage: 0  },
 };
 export const ABILITY_IDS = Object.keys(ABILITIES);
 
@@ -79,6 +80,7 @@ export const ABILITY_IDS = Object.keys(ABILITIES);
  */
 export const ABILITY_WEIGHTS = {
   jammer: 0.3,
+  slime: 0.5,
   rail: 0.7,
   cluster: 0.8,
   bouncer: 0.8,
@@ -92,13 +94,25 @@ export const JAM_SPEED_MUL = 0.8;   // −20% top speed
 /** Duration of the GPS jam, seconds. */
 export const JAM_SECONDS = 5;
 
+/**
+ * Slime Bomb timing. A hit splatters the victim's screen with slime
+ * (hard to see) for SLIME_COVER_SECONDS, then the slime drips off and
+ * they're slowed for SLIME_SLOW_SECONDS. Modelled as one countdown
+ * timer `fxSlime` = COVER + SLOW: while it's above SLOW_SECONDS the
+ * screen is covered; at or below it, they're slowed.
+ */
+export const SLIME_COVER_SECONDS = 5;
+export const SLIME_SLOW_SECONDS = 5;
+export const SLIME_TOTAL_SECONDS = SLIME_COVER_SECONDS + SLIME_SLOW_SECONDS;
+export const SLIME_SPEED_MUL = 0.65;  // −35% top speed during the slow phase
+
 /** Crate respawn delay in seconds, per host "Ability Spawn Rate" setting. */
 export const PICKUP_RATES = { low: 12, normal: 7, high: 4, chaos: 2 };
 
 /** Lobby settings the host may choose from (validated server-side). */
 export const SETTING_OPTIONS = {
   mode:   ['classic', 'combat'],
-  map:    ['downtown', 'volcano', 'frozen'],
+  map:    ['downtown', 'volcano', 'frozen', 'toxic'],
   laps:   [2, 3, 5],
   health: [50, 100, 200],
   rate:   ['low', 'normal', 'high', 'chaos'],
@@ -116,11 +130,26 @@ export const DEFAULT_SETTINGS = {
   private: false,
 };
 
-/** Car colours assigned by lobby slot (index 0..7). */
-export const PLAYER_COLORS = [
-  '#ff4d4d', '#4da6ff', '#5bde6b', '#ffd24d',
-  '#c86bff', '#ff8b3d', '#4dfff0', '#ff6bd5',
+/**
+ * Named car-colour palette players can pick from in the lobby. The
+ * server validates chosen colours against these hex values, so the
+ * client can only ever select a legal colour.
+ */
+export const CAR_COLORS = [
+  { id: 'red',      name: 'Red',       hex: '#ff4d4d' },
+  { id: 'babyblue', name: 'Baby Blue', hex: '#7ec8ff' },
+  { id: 'green',    name: 'Green',     hex: '#5bde6b' },
+  { id: 'yellow',   name: 'Yellow',    hex: '#ffd24d' },
+  { id: 'purple',   name: 'Purple',    hex: '#c86bff' },
+  { id: 'pink',     name: 'Pink',      hex: '#ff6bd5' },
+  { id: 'golden',   name: 'Golden',    hex: '#ffb020' },
+  { id: 'teal',     name: 'Teal',      hex: '#2ce0c8' },
 ];
+/** Set of valid colour hex strings for server-side validation. */
+export const CAR_COLOR_HEXES = CAR_COLORS.map((c) => c.hex);
+
+/** Default car colours assigned by lobby slot (index 0..7). */
+export const PLAYER_COLORS = CAR_COLORS.map((c) => c.hex);
 
 /** Silly names for server-controlled bots. */
 export const BOT_NAMES = [

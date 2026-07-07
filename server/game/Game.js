@@ -18,7 +18,8 @@
 import {
   TICK_RATE, SNAP_RATE, COUNTDOWN_MS, RESPAWN_SECONDS, INVULN_SECONDS,
   FINISH_GRACE_SECONDS, PHYS, PICKUP_RATES, BOT_NAMES, PLAYER_COLORS,
-  MAX_PLAYERS, JAM_SPEED_MUL, clamp, wrapAngle,
+  MAX_PLAYERS, JAM_SPEED_MUL, SLIME_SLOW_SECONDS, SLIME_SPEED_MUL,
+  clamp, wrapAngle,
 } from '../../shared/constants.js';
 import { buildTrack, collideWithTrack, terrainModsAt, crossedForward } from '../../shared/tracks.js';
 import { stepVehicle } from '../../shared/physics.js';
@@ -89,7 +90,7 @@ export class Game {
       vx: 0, vz: 0, vy: 0,
       h: spawn.h,
       boostMeter: 0, boostTime: 0,
-      fxSpin: 0, fxFrozen: 0, fxEmp: 0, fxJam: 0,
+      fxSpin: 0, fxFrozen: 0, fxEmp: 0, fxJam: 0, fxSlime: 0,
       trackIdx: null, wallHit: false,
       // --- race progress ---
       s: spawn.s,        // lap fraction at last tick
@@ -251,9 +252,11 @@ export class Game {
     if (p.isBot && input.fire && p.ability) useAbility(this, p);
 
     // Situational modifiers: base grip, slick zones, off-road mud, and
-    // the GPS-jam top-speed penalty.
+    // status top-speed penalties (GPS jam; slime SLOW phase only — the
+    // first COVER phase just blinds the screen, it doesn't slow).
     const mods = terrainModsAt(this.track, p);
     if (p.fxJam > 0) mods.maxMul *= JAM_SPEED_MUL;
+    if (p.fxSlime > 0 && p.fxSlime <= SLIME_SLOW_SECONDS) mods.maxMul *= SLIME_SPEED_MUL;
 
     stepVehicle(p, input, DT, mods);
     const loc = collideWithTrack(this.track, p, DT);
@@ -358,7 +361,7 @@ export class Game {
     }
   }
 
-  /** Lava pools + timed hazards (falling rocks, collapsing bridge). */
+  /** Lava/toxic pools, bottomless pits, and timed hazards. */
   checkStaticHazards(p) {
     if (p.invulnT > 0) return;
     const t = this.now() / 1000;
@@ -367,7 +370,10 @@ export class Game {
       const dx = p.x - h.x, dz = p.z - h.z;
       if (dx * dx + dz * dz > h.r * h.r) continue;
 
-      if (h.type === 'lava') {
+      if (h.type === 'hole') {
+        // Fall in (unless hopping over it) -> restart the current lap.
+        if (p.y < 0.6) this.fallInHole(p);
+      } else if (h.type === 'lava' || h.type === 'toxic') {
         if (p.y < 0.5) applyDamage(this, p, h.dps * DT, null, { silent: true });
       } else {
         // rocks / collapse are only lethal during their active window
@@ -376,6 +382,13 @@ export class Game {
         }
       }
     }
+  }
+
+  /** Car fell into a pit: teleport back to the start of its current lap. */
+  fallInHole(p) {
+    this.pushEvent({ e: 'fell', x: p.x, z: p.z, id: p.id });
+    this.respawnAtLapStart(p);
+    p.invulnT = Math.max(p.invulnT, 1.2); // brief grace so we don't re-fall
   }
 
   /** Where a periodic hazard is in its warn/active/idle cycle. */
@@ -501,9 +514,19 @@ export class Game {
     p.dead = false;
     p.hp = p.maxHp;
     p.invulnT = INVULN_SECONDS;
-    p.fxSpin = p.fxFrozen = p.fxEmp = p.fxJam = 0;
+    p.fxSpin = p.fxFrozen = p.fxEmp = p.fxJam = p.fxSlime = 0;
     p.boostTime = 0;
     this.pushEvent({ e: 'respawn', id: p.id });
+  }
+
+  /** Place a car at a given lap-fraction on the centreline (shared helper). */
+  placeAt(p, s) {
+    const w = this.track.worldAt(s, 0);
+    p.x = w.x; p.z = w.z; p.y = 0;
+    p.vx = p.vz = p.vy = 0;
+    p.h = Math.atan2(w.dirX, w.dirZ);
+    p.trackIdx = w.idx;
+    p.s = s % 1;
   }
 
   /** Place a car back at the last checkpoint it passed. */
@@ -511,13 +534,19 @@ export class Game {
     const N = this.track.numCps;
     const prevCp = (p.nextCp - 1 + N) % N;
     // Nudge just past the checkpoint so we don't instantly re-cross it.
-    const s = this.track.cpS[prevCp] + 0.002;
-    const w = this.track.worldAt(s, 0);
-    p.x = w.x; p.z = w.z; p.y = 0;
-    p.vx = p.vz = p.vy = 0;
-    p.h = Math.atan2(w.dirX, w.dirZ);
-    p.trackIdx = w.idx;
-    p.s = s % 1;
+    this.placeAt(p, this.track.cpS[prevCp] + 0.002);
+  }
+
+  /**
+   * Send a car back to the START of the lap it is currently on (used by
+   * the Volcano pits). It keeps its completed-lap count but must re-run
+   * every checkpoint from the start line — a heavy penalty.
+   */
+  respawnAtLapStart(p) {
+    this.placeAt(p, 0.004);   // just past the start/finish line
+    p.nextCp = 1;             // chase checkpoint 1 again
+    p.fxSpin = p.fxFrozen = p.fxEmp = 0;
+    p.boostTime = 0;
   }
 
   /* ------------------------------------------------------------ *
@@ -598,7 +627,7 @@ export class Game {
         hp: Math.round(p.hp), bm: Math.round(p.boostMeter),
         bt: round2(p.boostTime),
         sp: round2(p.fxSpin), fr: round2(p.fxFrozen), em: round2(p.fxEmp),
-        jm: round2(p.fxJam),
+        jm: round2(p.fxJam), sl: round2(p.fxSlime),
         sh: p.shieldT > 0 ? 1 : 0,
         ab: p.ability,
         lap: p.lapsDone, cp: p.nextCp, pos: p.position,

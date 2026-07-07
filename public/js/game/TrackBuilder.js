@@ -40,6 +40,14 @@ export const THEMES = {
     dirt: 0xd7e3ee, horizon: 0xf2f8fd, stars: null,
     decor: 'pines',
   },
+  toxic: {
+    sky: 0x0c1a10, fog: 0x102616, fogFar: 340,
+    ground: 0x16231a, road: 0x30402f, stripe: 0x8dff3a,
+    wall: 0x3f5a34, barrierA: 0x7bd23b, barrierB: 0x2a3520,
+    ambient: 0x9fe07a, hemiInt: 1.4, sun: 0xd6ffa0, sunInt: 1.1,
+    dirt: 0x2a3a1e, horizon: 0x0a1f12, stars: 0x8dff3a,
+    decor: 'barrels',
+  },
 };
 
 /** Deterministic RNG so decoration is identical for all players. */
@@ -145,15 +153,33 @@ export function buildTrackScene(scene, track) {
   const hazardVisuals = {};
   const moverMeshes = {};
   for (const h of track.hazards) {
-    if (h.type === 'lava') {
+    if (h.type === 'lava' || h.type === 'toxic') {
+      const isToxic = h.type === 'toxic';
       const m = new THREE.Mesh(
         new THREE.CircleGeometry(h.r, 22),
-        new THREE.MeshBasicMaterial({ color: 0xff5a1f }),
+        new THREE.MeshBasicMaterial({ color: isToxic ? 0x86e01f : 0xff5a1f }),
       );
       m.rotation.x = -Math.PI / 2;
       m.position.set(h.x, 0.02, h.z);
       group.add(m);
-      hazardVisuals[h.i] = { lava: m };
+      hazardVisuals[h.i] = { pool: m };
+    } else if (h.type === 'hole') {
+      // A bottomless pit: black disc sunk slightly, ringed by a rim so
+      // it reads clearly as "avoid me".
+      const pit = new THREE.Mesh(
+        new THREE.CircleGeometry(h.r, 24),
+        new THREE.MeshBasicMaterial({ color: 0x000000 }),
+      );
+      pit.rotation.x = -Math.PI / 2;
+      pit.position.set(h.x, -0.4, h.z);
+      group.add(pit);
+      const rim = new THREE.Mesh(
+        new THREE.RingGeometry(h.r, h.r + 0.7, 26),
+        new THREE.MeshBasicMaterial({ color: 0x1a1a1a, side: THREE.DoubleSide }),
+      );
+      rim.rotation.x = -Math.PI / 2;
+      rim.position.set(h.x, 0.03, h.z);
+      group.add(rim);
     } else if (h.type === 'slick') {
       const m = new THREE.Mesh(
         new THREE.CircleGeometry(h.r, 22),
@@ -440,16 +466,20 @@ function buildStars(color) {
 
 /**
  * Large flat patches on the terrain outside the road: lava pools on
- * Volcano, frozen ponds on Frozen Summit. Downtown skips these.
+ * Volcano, frozen ponds on Frozen Summit, toxic sludge on Toxic Waste.
+ * Downtown skips these.
  */
 function buildGroundPatches(track, theme) {
   const g = new THREE.Group();
   if (theme.decor === 'city') return g;
   const rnd = mulberry32(555777);
-  const isLava = theme.decor === 'rocks';
-  const mat = isLava
+  const glowing = theme.decor === 'rocks' || theme.decor === 'barrels';
+  const mat = theme.decor === 'rocks'
     ? new THREE.MeshBasicMaterial({ color: 0xff5a1f })
-    : new THREE.MeshBasicMaterial({ color: 0xbfe8ff, transparent: true, opacity: 0.85 });
+    : theme.decor === 'barrels'
+      ? new THREE.MeshBasicMaterial({ color: 0x86e01f })
+      : new THREE.MeshBasicMaterial({ color: 0xbfe8ff, transparent: true, opacity: 0.85 });
+  const isLava = glowing; // reused below for count/size (bigger, denser)
 
   let minX = 1e9, maxX = -1e9, minZ = 1e9, maxZ = -1e9;
   for (const p of track.pts) {
@@ -560,6 +590,9 @@ function buildRoadsideProps(track, theme) {
   } else if (theme.decor === 'rocks') {
     geo = new THREE.DodecahedronGeometry(0.8);
     mat = new THREE.MeshBasicMaterial({ color: 0xff7a30 }); // glowing embers
+  } else if (theme.decor === 'barrels') {
+    geo = new THREE.CylinderGeometry(0.7, 0.7, 1.6, 8); // toxic-waste barrels
+    mat = new THREE.MeshLambertMaterial({ color: 0x6fbf2a, emissive: 0x1a3a08 });
   } else {
     geo = new THREE.OctahedronGeometry(0.9);
     mat = new THREE.MeshLambertMaterial({ color: 0xd8f0ff });

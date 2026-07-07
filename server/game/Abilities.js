@@ -11,7 +11,8 @@
  */
 
 import {
-  ABILITIES, ABILITY_IDS, ABILITY_WEIGHTS, JAM_SECONDS, PHYS, wrapAngle,
+  ABILITIES, ABILITY_IDS, ABILITY_WEIGHTS, JAM_SECONDS, SLIME_TOTAL_SECONDS,
+  PHYS, wrapAngle,
 } from '../../shared/constants.js';
 import { trackLocate, inOpenZone } from '../../shared/tracks.js';
 
@@ -124,6 +125,7 @@ export function useAbility(game, p) {
     case 'minigun': p.gunT = 1.6; p.gunCd = 0; break; // fires from Game.tick
     case 'bouncer': fireBouncer(game, p); break;
     case 'jammer': fireJammer(game, p); break;
+    case 'slime': fireSlime(game, p); break;
   }
 }
 
@@ -152,6 +154,36 @@ function fireJammer(game, p) {
   }
   leader.fxJam = Math.max(leader.fxJam, JAM_SECONDS);
   game.pushEvent({ e: 'jam', id: leader.id, by: p.id });
+}
+
+/**
+ * Slime Bomb: lob a blob of toxic slime forward. It homes gently toward
+ * the nearest opponent ahead and, on contact, splatters their screen
+ * (see fxSlime handling in Game.tickRacer / GameClient). Reuses the
+ * projectile system; the slimeball itself does no impact damage.
+ */
+function fireSlime(game, p) {
+  const target = pickTarget(game, p, { aheadOnly: true }) || pickTarget(game, p);
+  const fx = Math.sin(p.h), fz = Math.cos(p.h);
+  game.projectiles.push({
+    id: game.nextObjectId++, ty: 'slimeball', owner: p.id,
+    x: p.x + fx * 2.5, z: p.z + fz * 2.5, y: 1,
+    h: p.h, speed: 46, t: 5,
+    targetId: target?.id || null,
+    trackIdx: p.trackIdx,
+  });
+}
+
+/** Splatter a racer with slime (screen cover then slow). Shield/invuln block it. */
+export function applySlime(game, target, ownerId) {
+  if (target.dead || target.finished || target.invulnT > 0) return;
+  if (target.shieldT > 0) {
+    target.shieldT = 0;
+    game.pushEvent({ e: 'shieldPop', id: target.id });
+    return;
+  }
+  target.fxSlime = Math.max(target.fxSlime, SLIME_TOTAL_SECONDS);
+  game.pushEvent({ e: 'slime', id: target.id, by: ownerId || null });
 }
 
 /**
@@ -362,6 +394,34 @@ function updateProjectiles(game, dt) {
       }
       if (pr.t <= 0) {
         explosion(game, pr.x, pr.z, 4.5, ABILITIES.rocket.damage, pr.owner);
+        return false;
+      }
+      return true;
+    }
+
+    if (pr.ty === 'slimeball') {
+      // Gently homing lob; splatters the first opponent it touches.
+      const target = pr.targetId ? game.players.get(pr.targetId) : null;
+      if (target && !target.dead) {
+        const want = Math.atan2(target.x - pr.x, target.z - pr.z);
+        const diff = wrapAngle(want - pr.h);
+        const maxTurn = 2.2 * dt;
+        pr.h = wrapAngle(pr.h + Math.max(-maxTurn, Math.min(maxTurn, diff)));
+      }
+      pr.x += Math.sin(pr.h) * pr.speed * dt;
+      pr.z += Math.cos(pr.h) * pr.speed * dt;
+      for (const q of game.players.values()) {
+        if (q.id === pr.owner || q.dead) continue;
+        if (Math.hypot(q.x - pr.x, q.z - pr.z) < 2.4 && q.y < 2) {
+          applySlime(game, q, pr.owner);
+          return false;
+        }
+      }
+      // Splat harmlessly on the wall or when it times out.
+      const sloc = trackLocate(track, pr.x, pr.z, pr.trackIdx);
+      pr.trackIdx = sloc.idx;
+      if ((Math.abs(sloc.lat) > track.halfWidth + 0.5 && !inOpenZone(track, pr.x, pr.z)) || pr.t <= 0) {
+        game.pushEvent({ e: 'slimeSplat', x: pr.x, z: pr.z });
         return false;
       }
       return true;

@@ -66,6 +66,7 @@ export class Renderer {
 
     if (track.theme === 'frozen') this.buildParticles('snow');
     if (track.theme === 'volcano') this.buildParticles('embers');
+    if (track.theme === 'toxic') this.buildParticles('spores');
     this.camInit = false;
   }
 
@@ -410,7 +411,9 @@ export class Renderer {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const mat = mode === 'snow'
       ? new THREE.PointsMaterial({ color: 0xffffff, size: 0.35, transparent: true, opacity: 0.85 })
-      : new THREE.PointsMaterial({ color: 0xff9040, size: 0.3, transparent: true, opacity: 0.8 });
+      : mode === 'spores'
+        ? new THREE.PointsMaterial({ color: 0x9dff45, size: 0.32, transparent: true, opacity: 0.7 })
+        : new THREE.PointsMaterial({ color: 0xff9040, size: 0.3, transparent: true, opacity: 0.8 });
     this.snow = new THREE.Points(geo, mat);
     this.snow.userData.mode = mode;
     this.scene.add(this.snow);
@@ -466,6 +469,11 @@ function makeProjectileMesh(ty) {
     return new THREE.Mesh(
       new THREE.SphereGeometry(0.75, 12, 10),
       new THREE.MeshBasicMaterial({ color: 0xc86bff }));
+  }
+  if (ty === 'slimeball') {
+    return new THREE.Mesh(
+      new THREE.SphereGeometry(0.7, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0x8dff2a }));
   }
   // cluster bomb / bomblet: simple dark sphere
   const r = ty === 'cluster' ? 0.55 : 0.3;

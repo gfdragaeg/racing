@@ -86,8 +86,9 @@ function measureLoop(samples) {
 /** Metadata surfaced in the lobby UI. */
 export const TRACK_INFO = {
   downtown: { name: 'Downtown Circuit', difficulty: 'Beginner', blurb: 'Wide city streets, boost pads, tunnels and alley shortcuts.' },
-  volcano:  { name: 'Volcano Run',      difficulty: 'Hard',     blurb: 'Narrow twisting road with lava, falling rocks and a collapsing bridge.' },
+  volcano:  { name: 'Volcano Run',      difficulty: 'Hard',     blurb: 'Narrow road with lava, falling rocks, a collapsing bridge and bottomless pits — fall in and you restart the lap!' },
   frozen:   { name: 'Frozen Summit',    difficulty: 'Tricky',   blurb: 'Low-grip ice, a frozen-lake shortcut, moving glaciers and snowstorms.' },
+  toxic:    { name: 'Toxic Waste',      difficulty: 'Hard',     blurb: 'Radioactive sludge, toxic-waste pools and slippery ooze in an abandoned chemical plant.' },
 };
 export const TRACK_IDS = Object.keys(TRACK_INFO);
 
@@ -164,6 +165,11 @@ const TRACK_DEFS = {
       { type: 'rocks', s: 0.90, lat: 2, r: 5, period: 7, warn: 1.5, active: 0.7, dps: 55 },
       // Collapsing bridge: a longer zone that periodically gives way.
       { type: 'collapse', s: 0.575, lat: 0, r: 9, period: 9, warn: 2.0, active: 2.0, dps: 35 },
+      // Bottomless pits: offset to one side so there's a lane to thread
+      // (or hop over with SHIFT). Fall in and you restart the CURRENT lap.
+      { type: 'hole', s: 0.19, lat: 3, r: 2.6 },
+      { type: 'hole', s: 0.41, lat: -3, r: 2.6 },
+      { type: 'hole', s: 0.83, lat: 3, r: 2.6 },
     ],
     tunnels: [],
   },
@@ -203,6 +209,46 @@ const TRACK_DEFS = {
     ],
     // Reused as "ice cave" arches on this map.
     tunnels: [{ from: 0.60, to: 0.66 }],
+  },
+
+  toxic: {
+    theme: 'toxic',
+    ctrl: radialLoop([128, 108, 134, 100, 138, 104, 126, 112, 136, 100, 130, 110], 1.1, 1.0),
+    halfWidth: 8,
+    baseGrip: 0.9, // faint ooze on the tarmac
+    checkpoints: 8,
+    // Sludge-field shortcuts (toxic pools lurk inside them).
+    shortcuts: [
+      { a: 0.20, b: 0.32, w: 12 },
+      { a: 0.70, b: 0.80, w: 11 },
+    ],
+    // Thick sludge off the road: heavy slowdown.
+    offRoad: { accelMul: 0.6, maxMul: 0.7, grip: 0.7 },
+    boostPads: [
+      { s: 0.10, lat: 0, type: 'boost' }, { s: 0.45, lat: 0, type: 'ramp' },
+      { s: 0.60, lat: 0, type: 'boost' }, { s: 0.88, lat: 0, type: 'boost' },
+    ],
+    pickupRows: [
+      { s: 0.08, lats: [-4, 0, 4] }, { s: 0.18, lats: [-4, 0, 4] },
+      { s: 0.36, lats: [-4, 0, 4] }, { s: 0.50, lats: [-4, 0, 4] },
+      { s: 0.62, lats: [-4, 0, 4] }, { s: 0.78, lats: [-4, 0, 4] },
+      { s: 0.92, lats: [-4, 0, 4] },
+    ],
+    hazards: [
+      // Toxic-waste pools eating into the road edge (damage over time).
+      { type: 'toxic', s: 0.14, lat: 4, r: 4, dps: 18 },
+      { type: 'toxic', s: 0.38, lat: -4, r: 4, dps: 18 },
+      { type: 'toxic', s: 0.55, lat: 4, r: 4, dps: 18 },
+      { type: 'toxic', s: 0.84, lat: -4, r: 4, dps: 18 },
+      // Big pools inside the sludge shortcuts (risk vs reward).
+      { type: 'toxic', s: 0.26, lat: -26, r: 8, dps: 18 },
+      { type: 'toxic', s: 0.75, lat: 24, r: 8, dps: 18 },
+      // Radioactive slick patches on the racing line.
+      { type: 'slick', s: 0.48, lat: 0, r: 6, grip: 0.4 },
+      { type: 'slick', s: 0.95, lat: -2, r: 6, grip: 0.4 },
+    ],
+    // Reused as a big rusty pipe over the road.
+    tunnels: [{ from: 0.63, to: 0.69 }],
   },
 };
 

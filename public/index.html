@@ -86,6 +86,10 @@
         <div class="lobby-col">
           <h3>Racers</h3>
           <ul id="lobby-players" class="player-list"></ul>
+          <div class="car-color-picker">
+            <span class="ccp-label">Your car colour <span class="ccp-hint">(or click your swatch above)</span></span>
+            <div id="color-swatches" class="color-swatches"></div>
+          </div>
         </div>
 
         <div class="lobby-col">
@@ -101,6 +105,7 @@
                 <option value="downtown">Downtown Circuit</option>
                 <option value="volcano">Volcano Run</option>
                 <option value="frozen">Frozen Summit</option>
+                <option value="toxic">Toxic Waste</option>
               </select></label>
             <label>Laps
               <select id="set-laps">
@@ -173,6 +178,14 @@
       <div id="hud-glitch" class="hud-glitch">
         <div class="glitch-scan"></div>
         <div class="glitch-warn" data-text="⚠ SIGNAL JAMMED ⚠">⚠ SIGNAL JAMMED ⚠</div>
+      </div>
+
+      <!-- Slime Bomb splatter: obscures the victim's view for 5s -->
+      <div id="hud-slime" class="hud-slime">
+        <span class="slime-blob b1"></span><span class="slime-blob b2"></span>
+        <span class="slime-blob b3"></span><span class="slime-blob b4"></span>
+        <span class="slime-blob b5"></span><span class="slime-drip d1"></span>
+        <span class="slime-drip d2"></span><span class="slime-drip d3"></span>
       </div>
       <div id="hud-hint" class="hud-hint">
         WASD / arrows — drive · SHIFT — hop &amp; drift · SPACE — boost · C — look back · F — fire item · ESC — menu
