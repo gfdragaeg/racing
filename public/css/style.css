@@ -1,0 +1,422 @@
+/* =====================================================================
+   Chaos Circuit — UI stylesheet
+   Dark neon-arcade look. Menus are centered panels; the game screen is
+   a full-viewport canvas with an absolutely-positioned HUD overlay.
+   Responsive: panels shrink gracefully on small viewports.
+   ===================================================================== */
+
+:root {
+  --bg: #0b0d14;
+  --panel: #141826e6;
+  --panel-border: #2a3350;
+  --text: #e8ecf6;
+  --text-dim: #8b93ad;
+  --accent: #38e0ff;
+  --accent2: #ff4d88;
+  --good: #5bde6b;
+  --bad: #ff5c5c;
+  --warn: #ffd24d;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+}
+
+/* ------------------------------ screens ---------------------------- */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(1200px 600px at 70% -10%, #1a2340 0%, transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, #2a1030 0%, transparent 60%),
+    var(--bg);
+}
+.screen.active { display: flex; }
+.game-screen { background: #000; }
+
+/* ------------------------------ panels ----------------------------- */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 32px 40px;
+  min-width: 320px;
+  max-width: 92vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 20px 60px #000a;
+  text-align: center;
+}
+.menu-panel { min-width: 360px; }
+
+.game-title {
+  font-size: 52px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--accent);
+  text-shadow: 0 0 24px #38e0ff55;
+  line-height: 1;
+}
+.game-title span { color: var(--accent2); text-shadow: 0 0 24px #ff4d8855; }
+.tagline { color: var(--text-dim); margin-bottom: 8px; }
+
+h2 { font-size: 26px; letter-spacing: 1px; }
+h3 { font-size: 15px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; text-align: left; }
+
+/* ------------------------------ controls --------------------------- */
+
+.btn {
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text);
+  background: #1d2438;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform .06s, background .15s, box-shadow .15s;
+}
+.btn:hover:not(:disabled) { background: #263050; transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.primary { background: linear-gradient(135deg, #0e7f96, #14a4c4); border-color: #2ad; box-shadow: 0 0 18px #38e0ff33; }
+.btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, #1298b4, #19bde0); }
+.btn.big { font-size: 20px; padding: 16px 22px; }
+.btn.subtle { background: transparent; color: var(--text-dim); }
+.btn.ready-on { background: linear-gradient(135deg, #1d7a34, #2aa64a); border-color: #3c5; }
+
+input[type="text"] {
+  padding: 12px 14px;
+  font-size: 16px;
+  text-align: center;
+  color: var(--text);
+  background: #0e1220;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  outline: none;
+  letter-spacing: 1px;
+}
+input[type="text"]:focus { border-color: var(--accent); }
+#join-code { text-transform: uppercase; width: 120px; font-size: 22px; letter-spacing: 6px; }
+
+select {
+  padding: 8px 10px;
+  background: #0e1220;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  font-size: 14px;
+}
+select:disabled { opacity: .55; }
+
+.join-row { display: flex; gap: 10px; justify-content: center; }
+.divider { color: var(--text-dim); font-size: 13px; letter-spacing: 1px; }
+.error-text { color: var(--bad); min-height: 18px; font-size: 14px; }
+.conn-status { color: var(--text-dim); font-size: 12px; }
+.credits-text { color: var(--text-dim); line-height: 1.6; }
+
+.slider-row {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 16px; font-size: 15px; color: var(--text-dim);
+}
+.slider-row input { width: 180px; accent-color: var(--accent); }
+
+/* ------------------------------ lobby ------------------------------ */
+
+.lobby-panel { min-width: min(760px, 94vw); text-align: left; }
+.lobby-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+
+.room-code-box {
+  font-size: 13px; color: var(--text-dim); letter-spacing: 1px;
+  background: #0e1220; border: 1px dashed var(--accent);
+  padding: 8px 14px; border-radius: 8px;
+}
+.room-code-box span {
+  display: block; font-size: 30px; font-weight: 900;
+  letter-spacing: 8px; color: var(--accent); cursor: pointer;
+}
+
+.lobby-columns { display: flex; gap: 28px; flex-wrap: wrap; }
+.lobby-col { flex: 1 1 280px; display: flex; flex-direction: column; gap: 10px; }
+
+.player-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.player-list li {
+  display: flex; align-items: center; gap: 10px;
+  background: #0e1220; padding: 9px 12px; border-radius: 8px; font-size: 15px;
+}
+.player-list .dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+.player-list .who { flex: 1; }
+.player-list .tag { font-size: 11px; color: var(--warn); letter-spacing: 1px; }
+.player-list .rdy { font-size: 12px; color: var(--text-dim); }
+.player-list .rdy.on { color: var(--good); font-weight: 700; }
+
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; }
+.settings-grid label {
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 13px; color: var(--text-dim);
+}
+.settings-grid .private-row { flex-direction: row; align-items: center; gap: 8px; }
+.map-blurb { font-size: 13px; color: var(--text-dim); font-style: italic; min-height: 34px; }
+.host-note { font-size: 11px; color: var(--warn); text-transform: none; letter-spacing: 0; }
+
+.lobby-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.lobby-status { text-align: center; color: var(--text-dim); font-size: 14px; min-height: 18px; }
+
+/* ------------------------------ game HUD --------------------------- */
+
+#game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+#hud { position: absolute; inset: 0; pointer-events: none; font-weight: 700; }
+
+.hud-top-left { position: absolute; top: 18px; left: 22px; }
+.hud-pos { font-size: 46px; color: var(--accent); text-shadow: 0 0 14px #38e0ff66; line-height: 1; }
+.hud-lap { font-size: 18px; color: var(--text); letter-spacing: 2px; margin-top: 4px; }
+
+.hud-top-right { position: absolute; top: 18px; right: 22px; }
+.hud-board { list-style: none; font-size: 13px; text-align: right; background: #0009; padding: 8px 12px; border-radius: 8px; min-width: 150px; }
+.hud-board li { padding: 2px 0; color: var(--text-dim); }
+.hud-board li.me { color: var(--accent); font-weight: 900; }
+.hud-board li .lapn { opacity: .7; font-size: 11px; }
+
+.hud-bottom-left { position: absolute; bottom: 20px; left: 22px; width: min(300px, 40vw); }
+.hud-label { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); margin: 6px 0 3px; }
+.hud-label .hint { letter-spacing: 0; text-transform: none; opacity: .7; }
+.hud-label.centered { text-align: center; }
+.bar { height: 14px; background: #000a; border: 1px solid #ffffff22; border-radius: 7px; overflow: hidden; }
+.bar > div { height: 100%; width: 100%; transition: width .12s linear; }
+#hud-hp-fill { background: linear-gradient(90deg, #35c04d, #7ce35b); }
+#hud-hp-fill.low { background: linear-gradient(90deg, #c03535, #e35b5b); }
+#hud-boost-fill { background: linear-gradient(90deg, #1687ff, #38e0ff); width: 0%; }
+
+.hud-bottom-right { position: absolute; bottom: 20px; right: 26px; text-align: center; }
+.hud-ability {
+  width: 74px; height: 74px; margin: 0 auto 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px; background: #000a;
+  border: 2px solid #ffffff33; border-radius: 12px;
+}
+.hud-ability.has { border-color: var(--accent); box-shadow: 0 0 16px #38e0ff55; }
+.hud-speed { font-size: 40px; color: var(--text); text-shadow: 0 2px 8px #000; line-height: 1; }
+
+.hud-center {
+  position: absolute; top: 32%; left: 0; right: 0;
+  text-align: center; font-size: 64px; font-weight: 900;
+  color: var(--warn); text-shadow: 0 0 30px #ffd24d66, 0 4px 10px #000;
+  letter-spacing: 4px;
+}
+.hud-status {
+  position: absolute; top: 48%; left: 0; right: 0;
+  text-align: center; font-size: 22px; color: var(--bad);
+  text-shadow: 0 2px 8px #000;
+}
+.hud-hint {
+  position: absolute; bottom: 4px; left: 0; right: 0;
+  text-align: center; font-size: 12px; font-weight: 400;
+  color: #ffffff66; letter-spacing: .5px;
+  transition: opacity 1s;
+}
+.hud-hint.faded { opacity: 0; }
+
+/* ---- GPS-jam glitch overlay (shown only to the jammed leader) ---- */
+.hud-glitch {
+  position: absolute; inset: 0;
+  display: none; align-items: center; justify-content: center;
+  overflow: hidden;
+  background: repeating-linear-gradient(
+    0deg, #00e5ff10 0, #00e5ff10 2px, transparent 2px, transparent 4px);
+  mix-blend-mode: screen;
+}
+.hud-glitch.on { display: flex; animation: glitch-flick 0.09s steps(2) infinite; }
+@keyframes glitch-flick {
+  0%   { opacity: 0.9; transform: translate(0, 0); }
+  50%  { opacity: 0.55; transform: translate(-3px, 1px); }
+  100% { opacity: 0.9; transform: translate(3px, -1px); }
+}
+/* Moving scanline sweep. */
+.glitch-scan {
+  position: absolute; left: 0; right: 0; height: 26%;
+  background: linear-gradient(#ffffff00, #ff2b6b55, #ffffff00);
+  animation: glitch-scan-move 0.7s linear infinite;
+}
+@keyframes glitch-scan-move { from { top: -30%; } to { top: 110%; } }
+/* Warning text with red/cyan chromatic-aberration copies. */
+.glitch-warn {
+  position: relative;
+  font-size: clamp(24px, 6vw, 64px); font-weight: 900; letter-spacing: 4px;
+  color: #fff; text-shadow: 0 0 18px #ff2b6b;
+  animation: glitch-shift 0.12s steps(2) infinite;
+}
+.glitch-warn::before, .glitch-warn::after {
+  content: attr(data-text);
+  position: absolute; left: 0; top: 0; width: 100%;
+}
+.glitch-warn::before { color: #ff2b6b; transform: translate(-3px, 0); clip-path: inset(0 0 55% 0); }
+.glitch-warn::after  { color: #38e0ff; transform: translate(3px, 0);  clip-path: inset(55% 0 0 0); }
+@keyframes glitch-shift {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(2px, -2px) skewX(-6deg); }
+  100% { transform: translate(-2px, 2px) skewX(4deg); }
+}
+
+/* ------------------------------ overlays --------------------------- */
+
+.overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #000a; backdrop-filter: blur(3px);
+}
+.hidden { display: none !important; }
+
+/* ------------------------------ results ---------------------------- */
+
+.results-panel { min-width: min(720px, 94vw); }
+.fastest-lap { color: var(--warn); font-size: 15px; }
+.results-scroll { overflow-x: auto; }
+#results-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+#results-table th, #results-table td { padding: 8px 10px; text-align: center; }
+#results-table th { color: var(--text-dim); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+#results-table tbody tr { background: #0e1220; }
+#results-table tbody tr:nth-child(odd) { background: #101527; }
+#results-table tbody tr.me { outline: 1px solid var(--accent); }
+#results-table td.racer { text-align: left; font-weight: 700; }
+#results-table .medal { font-size: 16px; }
+
+/* ------------------------- touch controls -------------------------- */
+/* Hidden entirely unless the body has the `touch` class (set at runtime
+   for touch-capable devices in main.js). Buttons live in the bottom
+   corners for two-thumb play and support multi-touch. */
+
+#touch-controls { display: none; }
+
+body.touch #touch-controls {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* only the buttons are interactive */
+  /* Button sizes + spacing as variables so offsets always match sizes
+     (mixing vmin offsets with px sizes caused overlaps). These are the
+     PORTRAIT defaults; the landscape media query below retunes them for
+     the short-but-wide orientation. */
+  --big: clamp(82px, 16vmin, 104px);   /* steering + gas (most used) */
+  --sm:  clamp(64px, 12.5vmin, 84px);  /* brake / fire / drift / boost */
+  --look: clamp(50px, 9vmin, 60px);    /* look-behind */
+  --gap: 15px;
+  --edge: 18px;
+  --eL: calc(env(safe-area-inset-left) + var(--edge));
+  --eR: calc(env(safe-area-inset-right) + var(--edge));
+  --eB: calc(env(safe-area-inset-bottom) + 22px); /* lift off the bottom */
+}
+
+/* Landscape (the recommended orientation): height is the constraint, so
+   size from vh and keep the three-high left stack comfortably on-screen,
+   while spreading the clusters a little wider. */
+@media (orientation: landscape) and (max-height: 560px) {
+  body.touch #touch-controls {
+    --big: clamp(68px, 20vh, 96px);
+    --sm:  clamp(56px, 16vh, 78px);
+    --look: clamp(44px, 12vh, 56px);
+    --gap: clamp(10px, 3vh, 18px);
+    --edge: clamp(14px, 4vw, 40px);
+    --eB: calc(env(safe-area-inset-bottom) + 16px);
+  }
+}
+
+.tc-btn, #touch-pause {
+  position: absolute;
+  pointer-events: auto;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #ffffff55;
+  background: #0e1220b0;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-radius: 50%;
+  backdrop-filter: blur(2px);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .05s, background .1s;
+}
+.tc-btn.pressed { transform: scale(0.92); background: #1d92b0d0; border-color: var(--accent); }
+
+.tc-left, .tc-right, .tc-gas { width: var(--big); height: var(--big); font-size: 22px; }
+.tc-brake, .tc-fire, .tc-drift, .tc-boost { width: var(--sm); height: var(--sm); }
+.tc-look { width: var(--look); height: var(--look); font-size: 20px; }
+
+/* Left thumb: steering row, with drift/boost + look stacked above. */
+.tc-left  { left: var(--eL); bottom: var(--eB); }
+.tc-right { left: calc(var(--eL) + var(--big) + var(--gap)); bottom: var(--eB); }
+.tc-drift { left: var(--eL); bottom: calc(var(--eB) + var(--big) + var(--gap)); background: #2a1d40b0; }
+.tc-boost { left: calc(var(--eL) + var(--sm) + var(--gap)); bottom: calc(var(--eB) + var(--big) + var(--gap)); background: #10344ab0; }
+.tc-look  { left: var(--eL); bottom: calc(var(--eB) + var(--big) + var(--sm) + var(--gap) * 2); }
+
+/* Right thumb (PORTRAIT default): gas at the bottom corner with brake
+   and fire stacked above it, so the bottom row is only steering + gas
+   with a wide clear centre (a 4-wide bottom row won't fit a phone). */
+.tc-gas   { right: var(--eR); bottom: var(--eB); background: #123a1cb0; }
+.tc-brake { right: var(--eR); bottom: calc(var(--eB) + var(--big) + var(--gap)); background: #3a1414b0; }
+.tc-fire  { right: var(--eR); bottom: calc(var(--eB) + var(--big) + var(--sm) + var(--gap) * 2); background: #3a2a10b0; color: var(--warn); }
+
+/* Landscape has plenty of width but little height, so lay the right
+   cluster out WIDE instead of tall: brake beside gas, fire above gas. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .tc-brake { right: calc(var(--eR) + var(--big) + var(--gap)); bottom: var(--eB); }
+  .tc-fire  { right: var(--eR); bottom: calc(var(--eB) + var(--big) + var(--gap)); }
+}
+
+#touch-pause {
+  top: calc(env(safe-area-inset-top) + 8px); left: 50%; transform: translateX(-50%);
+  width: 42px; height: 42px; font-size: 18px; border-radius: 10px;
+}
+#touch-pause:active { transform: translateX(-50%) scale(0.92); }
+
+/* On touch, move the info HUD to the top so the thumb zones are clear. */
+body.touch .hud-bottom-left {
+  top: calc(env(safe-area-inset-top) + 96px); bottom: auto;
+  left: calc(env(safe-area-inset-left) + 16px); width: min(210px, 44vw);
+}
+body.touch .hud-bottom-right {
+  top: calc(env(safe-area-inset-top) + 84px); bottom: auto;
+  right: calc(env(safe-area-inset-right) + 16px);
+}
+body.touch .hud-speed { font-size: 28px; }
+body.touch .hud-ability { width: 56px; height: 56px; font-size: 28px; }
+body.touch .hud-hint { display: none; }        /* keyboard hint is irrelevant */
+body.touch .hud-label .hint { display: none; } /* "SPACE to use" won't fit */
+
+/* Portrait phones: nudge the top-left position readout smaller so the
+   two top HUD columns don't collide on a narrow screen. */
+@media (orientation: portrait) {
+  body.touch .hud-pos { font-size: 34px; }
+  body.touch .hud-board { display: none; }
+}
+
+/* ------------------------------ responsive ------------------------- */
+
+@media (max-width: 640px) {
+  .panel { padding: 22px 20px; }
+  .game-title { font-size: 38px; }
+  .hud-pos { font-size: 34px; }
+  .hud-speed { font-size: 28px; }
+  .hud-ability { width: 54px; height: 54px; font-size: 26px; }
+  .hud-center { font-size: 42px; }
+  .hud-board { display: none; }
+}

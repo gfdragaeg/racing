@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Chaos Circuit</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <!-- Three.js is served locally by the game server (no CDN). -->
+  <script type="importmap">
+    { "imports": { "three": "/vendor/three.module.js" } }
+  </script>
+  <!-- Socket.IO client, served by the Socket.IO server itself. -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <!-- ============================= MAIN MENU ============================= -->
+  <section id="screen-menu" class="screen active">
+    <div class="panel menu-panel">
+      <h1 class="game-title">CHAOS<span>CIRCUIT</span></h1>
+      <p class="tagline">Multiplayer combat racing</p>
+      <input id="name-input" type="text" maxlength="16" placeholder="Your racer name" autocomplete="off" />
+      <button id="btn-play" class="btn big primary">PLAY</button>
+      <button id="btn-settings" class="btn">SETTINGS</button>
+      <button id="btn-credits" class="btn">CREDITS</button>
+      <button id="btn-quit" class="btn subtle">QUIT</button>
+      <p id="conn-status" class="conn-status">connecting…</p>
+    </div>
+  </section>
+
+  <!-- ============================ PLAY (CREATE/JOIN) ===================== -->
+  <section id="screen-play" class="screen">
+    <div class="panel">
+      <h2>Join the chaos</h2>
+      <button id="btn-create" class="btn big primary">CREATE ROOM</button>
+      <div class="divider">or join a friend</div>
+      <div class="join-row">
+        <input id="join-code" type="text" maxlength="5" placeholder="CODE" autocomplete="off" />
+        <button id="btn-join" class="btn primary">JOIN</button>
+      </div>
+      <p id="play-error" class="error-text"></p>
+      <button id="btn-play-back" class="btn subtle">BACK</button>
+    </div>
+  </section>
+
+  <!-- ============================== SETTINGS ============================ -->
+  <section id="screen-settings" class="screen">
+    <div class="panel">
+      <h2>Settings</h2>
+      <label class="slider-row">Master volume
+        <input id="vol-master" type="range" min="0" max="100" value="80" /></label>
+      <label class="slider-row">Effects volume
+        <input id="vol-sfx" type="range" min="0" max="100" value="80" /></label>
+      <label class="slider-row">Engine volume
+        <input id="vol-engine" type="range" min="0" max="100" value="50" /></label>
+      <button id="btn-settings-back" class="btn subtle">BACK</button>
+    </div>
+  </section>
+
+  <!-- ============================== CREDITS ============================= -->
+  <section id="screen-credits" class="screen">
+    <div class="panel">
+      <h2>Credits</h2>
+      <p class="credits-text">
+        <strong>Chaos Circuit</strong> — a browser combat racer.<br /><br />
+        Engineering, art direction &amp; sound: the Chaos Circuit team.<br />
+        Built with Three.js, Socket.IO and Node.js.<br /><br />
+        Placeholder audio is synthesized live with WebAudio — no
+        samples were harmed in the making of this game.
+      </p>
+      <button id="btn-credits-back" class="btn subtle">BACK</button>
+    </div>
+  </section>
+
+  <!-- =============================== LOBBY ============================== -->
+  <section id="screen-lobby" class="screen">
+    <div class="panel lobby-panel">
+      <div class="lobby-head">
+        <h2>Lobby</h2>
+        <div class="room-code-box">ROOM CODE <span id="lobby-code">-----</span></div>
+      </div>
+
+      <div class="lobby-columns">
+        <div class="lobby-col">
+          <h3>Racers</h3>
+          <ul id="lobby-players" class="player-list"></ul>
+        </div>
+
+        <div class="lobby-col">
+          <h3>Race settings <span id="lobby-host-note" class="host-note"></span></h3>
+          <div class="settings-grid">
+            <label>Mode
+              <select id="set-mode">
+                <option value="combat">Combat Race</option>
+                <option value="classic">Classic Race</option>
+              </select></label>
+            <label>Map
+              <select id="set-map">
+                <option value="downtown">Downtown Circuit</option>
+                <option value="volcano">Volcano Run</option>
+                <option value="frozen">Frozen Summit</option>
+              </select></label>
+            <label>Laps
+              <select id="set-laps">
+                <option>2</option><option selected>3</option><option>5</option>
+              </select></label>
+            <label>Health
+              <select id="set-health">
+                <option>50</option><option selected>100</option><option>200</option>
+              </select></label>
+            <label>Ability rate
+              <select id="set-rate">
+                <option value="low">Low</option>
+                <option value="normal" selected>Normal</option>
+                <option value="high">High</option>
+                <option value="chaos">Chaos</option>
+              </select></label>
+            <label>Bots
+              <select id="set-bots">
+                <option>0</option><option>1</option><option>2</option><option>3</option>
+                <option>4</option><option>5</option><option>6</option><option>7</option>
+              </select></label>
+            <label class="private-row">Private lobby
+              <input id="set-private" type="checkbox" /></label>
+          </div>
+          <p id="map-blurb" class="map-blurb"></p>
+        </div>
+      </div>
+
+      <div class="lobby-actions">
+        <button id="btn-ready" class="btn">READY UP</button>
+        <button id="btn-start" class="btn primary" disabled>START RACE</button>
+        <button id="btn-leave" class="btn subtle">LEAVE</button>
+      </div>
+      <p id="lobby-status" class="lobby-status"></p>
+    </div>
+  </section>
+
+  <!-- ================================ GAME =============================== -->
+  <section id="screen-game" class="screen game-screen">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD overlay -->
+    <div id="hud">
+      <div class="hud-top-left">
+        <div id="hud-pos" class="hud-pos">–</div>
+        <div id="hud-lap" class="hud-lap">LAP –/–</div>
+      </div>
+
+      <div class="hud-top-right">
+        <ol id="hud-board" class="hud-board"></ol>
+      </div>
+
+      <div class="hud-bottom-left">
+        <div class="hud-label">HEALTH</div>
+        <div class="bar hp-bar"><div id="hud-hp-fill"></div></div>
+        <div class="hud-label">BOOST <span class="hint">(drift to fill · SPACE to use)</span></div>
+        <div class="bar boost-bar"><div id="hud-boost-fill"></div></div>
+      </div>
+
+      <div class="hud-bottom-right">
+        <div id="hud-ability" class="hud-ability" title="Press F to fire">·</div>
+        <div id="hud-speed" class="hud-speed">0</div>
+        <div class="hud-label centered">KM/H</div>
+      </div>
+
+      <div id="hud-center" class="hud-center"></div>
+      <div id="hud-status" class="hud-status"></div>
+
+      <!-- GPS-jam full-screen glitch (shown only to the jammed leader) -->
+      <div id="hud-glitch" class="hud-glitch">
+        <div class="glitch-scan"></div>
+        <div class="glitch-warn" data-text="⚠ SIGNAL JAMMED ⚠">⚠ SIGNAL JAMMED ⚠</div>
+      </div>
+      <div id="hud-hint" class="hud-hint">
+        WASD / arrows — drive · SHIFT — hop &amp; drift · SPACE — boost · C — look back · F — fire item · ESC — menu
+      </div>
+    </div>
+
+    <!-- On-screen touch controls (shown only on touch devices). Each
+         button reports its state to Input.js via its data-touch action.
+         Buttons support multi-touch so steer + gas work together. -->
+    <div id="touch-controls" aria-hidden="true">
+      <button class="tc-btn tc-left"  data-touch="left"     aria-label="steer left">◀</button>
+      <button class="tc-btn tc-right" data-touch="right"    aria-label="steer right">▶</button>
+      <button class="tc-btn tc-look"  data-touch="lookback" aria-label="look behind">👁</button>
+      <button class="tc-btn tc-drift" data-touch="drift"    aria-label="hop and drift">DRIFT</button>
+      <button class="tc-btn tc-boost" data-touch="boost"    aria-label="boost">BOOST</button>
+      <button class="tc-btn tc-fire"  data-touch="fire"     aria-label="fire item">FIRE</button>
+      <button class="tc-btn tc-brake" data-touch="brake"    aria-label="brake and reverse">BRK</button>
+      <button class="tc-btn tc-gas"   data-touch="gas"      aria-label="accelerate">GAS</button>
+      <button id="touch-pause" aria-label="pause">⏸</button>
+    </div>
+
+    <!-- Pause / in-race menu (does NOT pause the server) -->
+    <div id="pause-menu" class="overlay hidden">
+      <div class="panel">
+        <h2>Paused (race continues!)</h2>
+        <button id="btn-resume" class="btn primary">RESUME</button>
+        <button id="btn-pause-leave" class="btn subtle">LEAVE RACE</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================== RESULTS ============================= -->
+  <section id="screen-results" class="screen">
+    <div class="panel results-panel">
+      <h2 id="results-title">Race complete</h2>
+      <p id="results-fastest" class="fastest-lap"></p>
+      <div class="results-scroll">
+        <table id="results-table">
+          <thead>
+            <tr><th>#</th><th>Racer</th><th>Time</th><th>Best lap</th>
+                <th>Dmg dealt</th><th>Dmg taken</th><th>Abilities</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="lobby-actions">
+        <button id="btn-rematch" class="btn primary">REMATCH</button>
+        <button id="btn-return-lobby" class="btn">RETURN TO LOBBY</button>
+        <button id="btn-results-leave" class="btn subtle">LEAVE</button>
+      </div>
+      <p id="results-wait" class="lobby-status"></p>
+    </div>
+  </section>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

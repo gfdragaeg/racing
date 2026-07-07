@@ -1,0 +1,22 @@
+# Dependencies (Render/host runs `npm install` to recreate these)
+node_modules/
+
+# Logs & runtime
+*.log
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Machine-local Claude Code settings (keep launch.json, drop local prefs)
+.claude/settings.local.json
+
+# Local scratch
+scratchpad/

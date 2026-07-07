@@ -1,0 +1,22 @@
+{
+  "name": "chaos-circuit",
+  "version": "0.1.0",
+  "description": "Browser-based multiplayer combat racing game. Server-authoritative Node.js + Socket.IO backend, Three.js client.",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}

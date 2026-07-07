@@ -1,0 +1,14 @@
+# Render deployment config for Chaos Circuit.
+# Render auto-detects Node apps, but pinning it here keeps the build
+# reproducible. The server binds process.env.PORT (see server/index.js),
+# which Render sets automatically.
+services:
+  - type: web
+    name: chaos-circuit
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
